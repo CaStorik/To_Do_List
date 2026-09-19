@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Todo List</title>
+        <link rel="stylesheet" href="style.css" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        />
+    </head>
+
+    <body>
+        <header>
+            <h1>Todo List</h1>
+        </header>
+
+        <main class="container">
+            <div class="error-message" id="error-message"></div>
+            <section class="input-section">
+                <input
+                    type="text"
+                    id="task-input"
+                    placeholder="Новая задача..."
+                />
+                <textarea
+                    id="task-description"
+                    placeholder="Описание задачи..."
+                    rows="2"
+                ></textarea>
+                <select id="task-priority">
+                    <option value="medium">Средний</option>
+                    <option value="low">Низкий</option>
+                    <option value="high">Высокий</option>
+                </select>
+                <button id="add-btn">Добавить</button>
+            </section>
+            <div class="filters">
+                <button class="filter-btn active" data-filter="all">Все</button>
+                <button class="filter-btn" data-filter="active">
+                    Активные
+                </button>
+                <button class="filter-btn" data-filter="completed">
+                    Завершенные
+                </button>
+            </div>
+            <section class="tasks-section">
+                <h2 class="section-title">
+                    <i class="fas fa-tasks"></i> Ваши задачи
+                </h2>
+                <ul class="task-list" id="task-list">
+                    <li class="loading">Загрузка задач...</li>
+                </ul>
+            </section>
+            <div class="pagination" id="pagination">
+                <button id="prev-btn" disabled>Назад</button>
+                <span id="page-info">Страница 1 из 1</span>
+                <button id="next-btn" disabled>Вперед</button>
+            </div>
+            <div class="stats">
+                <span
+                    >Всего задач:
+                    <span id="total-tasks" class="task-count">0</span></span
+                >
+                <span
+                    >Выполнено:
+                    <span id="completed-tasks" class="task-count">0</span></span
+                >
+            </div>
+        </main>
+        <div class="edit-modal" id="edit-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Редактировать задачу</h3>
+                    <button class="close-btn" id="close-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="edit-title">Название:</label>
+                        <input type="text" id="edit-title" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-description">Описание:</label>
+                        <textarea id="edit-description" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-priority">Приоритет:</label>
+                        <select id="edit-priority">
+                            <option value="low">Низкий</option>
+                            <option value="medium">Средний</option>
+                            <option value="high">Высокий</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-completed">
+                            <input type="checkbox" id="edit-completed" />
+                            Выполнено
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="cancel-edit">Отмена</button>
+                    <button id="save-edit">Сохранить</button>
+                </div>
+            </div>
+        </div>
+        <script src="index.js" type="text/javascript"></script>
+    </body>
+</html>
