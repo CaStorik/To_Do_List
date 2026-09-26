@@ -1,0 +1,9 @@
+app_name: todo-list
+app_user: todo
+app_dir: /opt/todo-list
+app_port: 3000
+
+db_name: todo_db
+db_user: postgres
+db_password: root
+db_host: localhost

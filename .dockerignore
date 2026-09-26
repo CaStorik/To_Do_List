@@ -1,0 +1,5 @@
+.git
+.idea
+ansible
+**/node_modules
+backend/.env

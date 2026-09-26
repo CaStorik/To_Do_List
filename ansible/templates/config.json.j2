@@ -1,0 +1,18 @@
+{
+    "development": {
+        "username": {{ db_user | to_json }},
+        "password": {{ db_password | to_json }},
+        "database": {{ db_name | to_json }},
+        "host": {{ db_host | to_json }},
+        "dialect": "postgres",
+        "logging": false
+    },
+    "production": {
+        "username": {{ db_user | to_json }},
+        "password": {{ db_password | to_json }},
+        "database": {{ db_name | to_json }},
+        "host": {{ db_host | to_json }},
+        "dialect": "postgres",
+        "logging": false
+    }
+}
