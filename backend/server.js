@@ -1,4 +1,5 @@
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const { sequelize } = require('./models');
@@ -18,6 +19,17 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+const frontendDir = path.join(__dirname, '..');
+app.get('/', (req, res) => {
+  res.sendFile(path.join(frontendDir, 'index.html'));
+});
+app.get('/index.js', (req, res) => {
+  res.sendFile(path.join(frontendDir, 'index.js'));
+});
+app.get('/style.css', (req, res) => {
+  res.sendFile(path.join(frontendDir, 'style.css'));
+});
+
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Что-то пошло не так' });
@@ -33,6 +45,7 @@ async function startServer() {
     
     app.listen(PORT, () => {
       console.log(`Сервер запущен на порту ${PORT}`);
+      console.log(`Приложение: http://localhost:${PORT}`);
       console.log(`Документация по api http://localhost:${PORT}/api-docs`);
     });
   } catch (error) {

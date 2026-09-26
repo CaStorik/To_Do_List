@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:3000/api";
+const API_BASE_URL = "/api";
 const ITEMS_PER_PAGE = 5;
 
 const taskInput = document.getElementById("task-input");
