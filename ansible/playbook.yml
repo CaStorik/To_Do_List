@@ -106,24 +106,25 @@
     - name: Задать пароль пользователя базы
       ansible.builtin.command:
         argv:
+          - runuser
+          - -u
+          - postgres
+          - --
           - psql
           - -v
           - ON_ERROR_STOP=1
           - -c
           - "ALTER USER {{ db_user }} WITH PASSWORD '{{ db_password }}'"
-      become_user: postgres
-      no_log: true
       changed_when: false
 
     - name: Создать базу приложения, если её ещё нет
       ansible.builtin.shell: |
-        psql -v ON_ERROR_STOP=1 <<SQL
+        runuser -u postgres -- psql -v ON_ERROR_STOP=1 <<SQL
         SELECT 'CREATE DATABASE {{ db_name }}'
         WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '{{ db_name }}')\gexec
         SQL
       args:
         executable: /bin/bash
-      become_user: postgres
       register: create_db
       changed_when: "'CREATE DATABASE' in create_db.stdout"
 
@@ -131,7 +132,7 @@
       ansible.builtin.user:
         name: "{{ app_user }}"
         system: true
-        shell: /usr/sbin/nologin
+        shell: /bin/bash
         home: "{{ app_dir }}"
         create_home: false
 
@@ -168,6 +169,7 @@
         - migrations
         - models
         - routes
+        - scripts
         - swagger
       notify: Перезапустить приложение
 
@@ -213,28 +215,47 @@
         recurse: true
 
     - name: Установить зависимости Node.js
-      ansible.builtin.command: npm ci --omit=dev
+      ansible.builtin.command:
+        argv:
+          - runuser
+          - -u
+          - "{{ app_user }}"
+          - --
+          - env
+          - HOME={{ app_dir }}
+          - npm
+          - ci
+          - --omit=dev
+          - --no-audit
+          - --no-fund
+          - --fetch-retries=5
+          - --fetch-timeout=300000
       args:
         chdir: "{{ app_dir }}/backend"
-      become_user: "{{ app_user }}"
-      environment:
-        HOME: "{{ app_dir }}"
-        npm_config_fund: "false"
-        npm_config_audit: "false"
+        creates: "{{ app_dir }}/backend/node_modules/sequelize/package.json"
       register: npm_ci
+      retries: 3
+      delay: 10
+      until: npm_ci.rc == 0
       changed_when: "'added' in npm_ci.stdout"
       notify: Перезапустить приложение
 
     - name: Применить миграции базы
-      ansible.builtin.command: npx --yes sequelize-cli db:migrate
+      ansible.builtin.command:
+        argv:
+          - runuser
+          - -u
+          - "{{ app_user }}"
+          - --
+          - env
+          - HOME={{ app_dir }}
+          - NODE_ENV=production
+          - node
+          - scripts/migrate.js
       args:
         chdir: "{{ app_dir }}/backend"
-      become_user: "{{ app_user }}"
-      environment:
-        HOME: "{{ app_dir }}"
-        NODE_ENV: production
       register: db_migrate
-      changed_when: "'migrated' in db_migrate.stdout"
+      changed_when: "': migrated' in db_migrate.stdout"
 
     - name: Установить unit systemd
       ansible.builtin.template:

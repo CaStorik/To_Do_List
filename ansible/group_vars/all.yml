@@ -2,6 +2,8 @@ app_name: todo-list
 app_user: todo
 app_dir: /opt/todo-list
 app_port: 3000
+docker_image_name: todo-list
+docker_image_tag: latest
 
 db_name: todo_db
 db_user: postgres

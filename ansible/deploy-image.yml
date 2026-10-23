@@ -1,0 +1,109 @@
+---
+# Отправка готового Docker-образа на сервер и запуск контейнеров.
+# Вызывается из Jenkins после docker build и docker save.
+#
+#   ansible-playbook ansible/deploy-image.yml -i ansible/local.ini \
+#     -e docker_image_name=todo-list \
+#     -e docker_image_tag=1 \
+#     -e image_archive=/path/to/todo-list-1.tar
+
+- name: Развернуть Docker-образ Todo List на сервере
+  hosts: servers
+  become: true
+
+  vars:
+    docker_image_name: todo-list
+    docker_image_tag: latest
+    image_archive: "{{ playbook_dir }}/../todo-list.tar"
+    deploy_dir: "{{ app_dir }}"
+
+  tasks:
+    - name: Проверить, что сервер на Debian или Ubuntu
+      ansible.builtin.assert:
+        that: ansible_os_family == "Debian"
+        fail_msg: "Плейбук рассчитан на Ubuntu или Debian."
+
+    - name: Остановить приложение systemd, если оно запущено
+      ansible.builtin.systemd:
+        name: "{{ app_name }}"
+        state: stopped
+      failed_when: false
+
+    - name: Проверить наличие Docker
+      ansible.builtin.command: docker info
+      register: docker_info
+      changed_when: false
+      failed_when: false
+
+    - name: Установить Docker, если его ещё нет
+      when: docker_info.rc != 0
+      block:
+        - name: Установить пакеты Docker
+          ansible.builtin.apt:
+            name:
+              - docker.io
+              - docker-compose-v2
+            state: present
+            update_cache: true
+
+        - name: Запустить Docker
+          ansible.builtin.service:
+            name: docker
+            state: started
+            enabled: true
+
+    - name: Создать каталог приложения на сервере
+      ansible.builtin.file:
+        path: "{{ deploy_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Доставить архив Docker-образа
+      ansible.builtin.copy:
+        src: "{{ image_archive }}"
+        dest: "{{ deploy_dir }}/todo-list.tar"
+        mode: "0644"
+
+    - name: Загрузить образ в Docker на сервере
+      ansible.builtin.command: docker load -i "{{ deploy_dir }}/todo-list.tar"
+      register: docker_load
+      changed_when: "'Loaded image' in docker_load.stdout"
+
+    - name: Пометить образ как latest
+      ansible.builtin.command: >
+        docker tag {{ docker_image_name }}:{{ docker_image_tag }}
+        {{ docker_image_name }}:latest
+      changed_when: false
+
+    - name: Доставить docker-compose для запуска контейнеров
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../docker-compose.deploy.yml"
+        dest: "{{ deploy_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Записать имя загруженного образа
+      ansible.builtin.copy:
+        dest: "{{ deploy_dir }}/.env"
+        mode: "0644"
+        content: |
+          TODO_IMAGE={{ docker_image_name }}:{{ docker_image_tag }}
+
+    - name: Поднять контейнеры на сервере
+      ansible.builtin.command: docker compose up -d --no-build
+      args:
+        chdir: "{{ deploy_dir }}"
+      register: compose_up
+      changed_when: "'Started' in compose_up.stderr or 'Created' in compose_up.stderr or 'Started' in compose_up.stdout or 'Created' in compose_up.stdout"
+
+    - name: Дождаться ответа приложения на сервере
+      ansible.builtin.uri:
+        url: "{{ health_url | default('http://127.0.0.1:' + (app_port | string) + '/health') }}"
+        status_code: 200
+      register: health
+      retries: 20
+      delay: 3
+      until: health.status == 200
+
+    - name: Сообщить адрес приложения на сервере
+      ansible.builtin.debug:
+        msg: "Приложение на сервере: http://{{ ansible_host | default(inventory_hostname) }}:{{ app_port }}"
