@@ -21,5 +21,4 @@ RUN apt-get update \
 COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
 RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
 
-# В лабораторной Jenkins работает от root, чтобы был доступ к docker.sock Docker Desktop.
 USER root

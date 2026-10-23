@@ -1,21 +1,14 @@
 pipeline {
     agent any
 
-    parameters {
-        string(
-            name: 'ANSIBLE_INVENTORY',
-            defaultValue: 'ansible/local.ini',
-            description: 'Инвентарь Ansible. Для Jenkins на Windows оставьте ansible/local.ini'
-        )
-    }
-
     environment {
         IMAGE_NAME = 'todo-list'
         IMAGE_TAG = "${env.BUILD_NUMBER}"
         TODO_IMAGE = "todo-list:${env.BUILD_NUMBER}"
         APP_HEALTH_URL = 'http://host.docker.internal:3000/health'
         ANSIBLE_HOST_KEY_CHECKING = 'False'
-        ANSIBLE_STDOUT_CALLBACK = 'yaml'
+        ANSIBLE_CONFIG = "${env.WORKSPACE}/ansible.cfg"
+        ANSIBLE_INVENTORY = "${env.WORKSPACE}/ansible/local.ini"
     }
 
     options {
@@ -66,7 +59,8 @@ pipeline {
                     docker save "${IMAGE_NAME}:${IMAGE_TAG}" -o "todo-list-${IMAGE_TAG}.tar"
                     docker compose down --remove-orphans || true
                     ansible-playbook ansible/deploy-image.yml \
-                        -i "${ANSIBLE_INVENTORY}" \
+                        -i "${WORKSPACE}/ansible/local.ini" \
+                        --limit localhost \
                         -e "docker_image_name=${IMAGE_NAME}" \
                         -e "docker_image_tag=${IMAGE_TAG}" \
                         -e "image_archive=${WORKSPACE}/todo-list-${IMAGE_TAG}.tar" \
