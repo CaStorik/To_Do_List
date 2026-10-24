@@ -2,7 +2,7 @@
 # Отправка готового Docker-образа на сервер и запуск контейнеров.
 # Вызывается из Jenkins после docker build и docker save.
 #
-#   ansible-playbook ansible/deploy-image.yml -i ansible/local.ini \
+#   ansible-playbook ansible/deploy-image.yml -i ansible/inventory.ini \
 #     -e docker_image_name=todo-list \
 #     -e docker_image_tag=1 \
 #     -e image_archive=/path/to/todo-list-1.tar
@@ -97,7 +97,7 @@
 
     - name: Дождаться ответа приложения на сервере
       ansible.builtin.uri:
-        url: "{{ health_url | default('http://127.0.0.1:' + (app_port | string) + '/health') }}"
+        url: "http://127.0.0.1:{{ app_port }}/health"
         status_code: 200
       register: health
       retries: 20
