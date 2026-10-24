@@ -10,6 +10,10 @@ pipeline {
         ANSIBLE_CONFIG = "${env.WORKSPACE}/ansible.cfg"
     }
 
+    triggers {
+        pollSCM('* * * * *')
+    }
+
     options {
         timestamps()
     }
