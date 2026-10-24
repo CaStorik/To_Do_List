@@ -18,6 +18,7 @@ pipeline {
         timestamps()
     }
 
+
     stages {
         stage('Checkout из GitHub') {
             steps {
